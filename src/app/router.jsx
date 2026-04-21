@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 import HomePage from "../pages/HomePage";
 import RegisterPage from "../pages/RegisterPage";
 import LoginPage from "../pages/LoginPage";
@@ -47,7 +48,9 @@ export const router = createBrowserRouter([
     path: "/candidates",
     element: (
       <AppLayout>
-        <ActiveCandidatesPage />
+        <ProtectedRoute allowedRoles={["VOTER"]}>
+          <ActiveCandidatesPage />
+        </ProtectedRoute>
       </AppLayout>
     ),
   },
@@ -55,7 +58,9 @@ export const router = createBrowserRouter([
     path: "/vote",
     element: (
       <AppLayout>
-        <VotePage />
+        <ProtectedRoute allowedRoles={["VOTER"]}>
+          <VotePage />
+        </ProtectedRoute>
       </AppLayout>
     ),
   },
@@ -71,7 +76,9 @@ export const router = createBrowserRouter([
     path: "/my-profile",
     element: (
       <AppLayout>
-        <MyProfilePage />
+        <ProtectedRoute allowedRoles={["VOTER"]}>
+          <MyProfilePage />
+        </ProtectedRoute>
       </AppLayout>
     ),
   },
@@ -79,7 +86,9 @@ export const router = createBrowserRouter([
     path: "/admin/dashboard",
     element: (
       <AppLayout>
-        <AdminDashboardPage />
+        <ProtectedRoute allowedRoles={["ADMIN"]}>
+          <AdminDashboardPage />
+        </ProtectedRoute>
       </AppLayout>
     ),
   },

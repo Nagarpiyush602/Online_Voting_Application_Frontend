@@ -2,10 +2,10 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyCMksafXHdu6y4nXZvLJOF8n4tSaYqdZOg",
+  authDomain: "votezy-2026.firebaseapp.com",
+  projectId: "votezy-2026",
+  appId: "1:439504773375:web:80dbf97b1b20665500acca",
 };
 
 const app = initializeApp(firebaseConfig);

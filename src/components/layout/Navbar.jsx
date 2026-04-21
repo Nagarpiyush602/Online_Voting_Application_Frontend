@@ -1,14 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
-import { clearAuthStorage, getToken, getUserRole } from "../../utils/auth";
+import { getToken, getUserRole } from "../../utils/auth";
+import { logoutUser } from "../../firebase/authService";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const token = getToken();
   const role = getUserRole();
 
-  const handleLogout = () => {
-    clearAuthStorage();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } finally {
+      navigate("/login");
+    }
   };
 
   return (
@@ -21,6 +25,7 @@ const Navbar = () => {
         <div className="flex items-center gap-4 text-sm md:text-base">
           <Link to="/">Home</Link>
           <Link to="/active-election">Active Election</Link>
+          <Link to="/result">Result</Link>
 
           {token && role === "VOTER" && (
             <>
