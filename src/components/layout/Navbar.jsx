@@ -81,6 +81,9 @@ const Navbar = () => {
               <NavLink to="/admin/dashboard" className={linkClass}>
                 Admin Dashboard
               </NavLink>
+              <NavLink to="/admin/candidates" className={linkClass}>
+                Manage Candidates
+              </NavLink>
               <NavLink to="/active-election" className={linkClass}>
                 Active Election
               </NavLink>
