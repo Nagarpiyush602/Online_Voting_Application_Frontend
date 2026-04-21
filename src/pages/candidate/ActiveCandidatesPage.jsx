@@ -1,19 +1,74 @@
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
+import Loader from "../../components/ui/Loader";
+import { getActiveElectionCandidates } from "../../api/candidateApi";
 
 const ActiveCandidatesPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [candidates, setCandidates] = useState([]);
+
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        setLoading(true);
+        const response = await getActiveElectionCandidates();
+        setCandidates(response.data || []);
+      } catch (error) {
+        const message =
+          error.response?.data?.message || "Failed to fetch candidates";
+        toast.error(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCandidates();
+  }, []);
+
   return (
     <div>
       <PageHeader
         title="Candidates"
-        subtitle="Active election ke candidates yahan dikhenge."
+        subtitle="Active election ke candidates backend se fetch ho rahe hain."
       />
-      <SectionCard>
-        <p className="text-slate-600">
-          Day 5 me protected API `/api/candidates/active-election` connect
-          karenge.
-        </p>
-      </SectionCard>
+
+      {loading ? (
+        <Loader text="Candidates load ho rahe hain..." />
+      ) : candidates.length === 0 ? (
+        <SectionCard>
+          <p className="text-slate-600">
+            Active election ke liye abhi koi candidate available nahi hai.
+          </p>
+        </SectionCard>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {candidates.map((candidate) => (
+            <SectionCard key={candidate.id} className="space-y-3">
+              <h2 className="text-xl font-semibold text-slate-800">
+                {candidate.name}
+              </h2>
+
+              <div className="space-y-1 text-slate-600">
+                <p>
+                  <span className="font-medium text-slate-700">Party:</span>{" "}
+                  {candidate.party || "N/A"}
+                </p>
+
+                {"voteCount" in candidate && (
+                  <p>
+                    <span className="font-medium text-slate-700">
+                      Vote Count:
+                    </span>{" "}
+                    {candidate.voteCount}
+                  </p>
+                )}
+              </div>
+            </SectionCard>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
