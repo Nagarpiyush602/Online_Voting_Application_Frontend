@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
+import EmptyState from "../../components/ui/EmptyState";
 import { getActiveElectionCandidates } from "../../api/candidateApi";
 
 const ActiveCandidatesPage = () => {
@@ -19,6 +20,7 @@ const ActiveCandidatesPage = () => {
         const message =
           error.response?.data?.message || "Failed to fetch candidates";
         toast.error(message);
+        setCandidates([]);
       } finally {
         setLoading(false);
       }
@@ -38,9 +40,10 @@ const ActiveCandidatesPage = () => {
         <Loader text="Candidates load ho rahe hain..." />
       ) : candidates.length === 0 ? (
         <SectionCard>
-          <p className="text-slate-600">
-            Active election ke liye abhi koi candidate available nahi hai.
-          </p>
+          <EmptyState
+            title="No Candidates Available"
+            message="Active election ke liye abhi koi candidate available nahi hai."
+          />
         </SectionCard>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

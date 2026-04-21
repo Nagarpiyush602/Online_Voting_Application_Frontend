@@ -3,29 +3,24 @@ import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
-import ElectionForm from "../../components/election/ElectionForm";
+import StatusBadge from "../../components/ui/StatusBadge";
+import EmptyState from "../../components/ui/EmptyState";
 import {
   createElection,
   deleteElection,
   getAllElections,
 } from "../../api/electionApi";
 
-const getStatusColor = (status) => {
-  switch (status) {
-    case "ACTIVE":
-      return "bg-emerald-100 text-emerald-700";
-    case "UPCOMING":
-      return "bg-amber-100 text-amber-700";
-    case "COMPLETED":
-      return "bg-slate-200 text-slate-700";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
+const initialForm = {
+  name: "",
+  startTime: "",
+  endTime: "",
 };
 
-const AdminElectionsPage = () => {
+const AdminElectionPage = () => {
+  const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(true);
-  const [formLoading, setFormLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [elections, setElections] = useState([]);
 
@@ -48,26 +43,72 @@ const AdminElectionsPage = () => {
     fetchElections();
   }, []);
 
-  const handleCreateElection = async (formData) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast.error("Election name is required");
+      return false;
+    }
+
+    if (!formData.startTime) {
+      toast.error("Start time is required");
+      return false;
+    }
+
+    if (!formData.endTime) {
+      toast.error("End time is required");
+      return false;
+    }
+
+    const start = new Date(formData.startTime);
+    const end = new Date(formData.endTime);
+
+    if (end <= start) {
+      toast.error("End time must be greater than start time");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCreateElection = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
     try {
-      setFormLoading(true);
-      const response = await createElection(formData);
+      setCreateLoading(true);
+
+      const payload = {
+        name: formData.name.trim(),
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      };
+
+      const response = await createElection(payload);
+
       toast.success(response.message || "Election created successfully");
-      await fetchElections();
-      return true;
+      setFormData(initialForm);
+      fetchElections();
     } catch (error) {
       const message =
         error.response?.data?.message || "Failed to create election";
       toast.error(message);
-      return false;
     } finally {
-      setFormLoading(false);
+      setCreateLoading(false);
     }
   };
 
-  const handleDeleteElection = async (electionId, electionName) => {
+  const handleDeleteElection = async (electionId) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${electionName}?`,
+      "Are you sure you want to delete this election?",
     );
 
     if (!confirmed) return;
@@ -76,7 +117,7 @@ const AdminElectionsPage = () => {
       setDeleteLoadingId(electionId);
       const response = await deleteElection(electionId);
       toast.success(response.message || "Election deleted successfully");
-      await fetchElections();
+      fetchElections();
     } catch (error) {
       const message =
         error.response?.data?.message || "Failed to delete election";
@@ -89,22 +130,77 @@ const AdminElectionsPage = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Admin Election Management"
-        subtitle="Admin yahan elections create karega aur sabhi elections ko manage karega."
+        title="Manage Elections"
+        subtitle="Admin yahan new election create kar sakta hai aur existing elections manage kar sakta hai."
       />
 
-      <SectionCard className="space-y-4">
-        <h2 className="text-xl font-semibold text-slate-800">
+      <SectionCard>
+        <h2 className="mb-4 text-xl font-semibold text-slate-800">
           Create Election
         </h2>
-        <ElectionForm onSubmit={handleCreateElection} loading={formLoading} />
+
+        <form
+          onSubmit={handleCreateElection}
+          className="grid gap-4 md:grid-cols-2"
+        >
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Election Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter election name"
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none transition focus:border-slate-500"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Start Time
+            </label>
+            <input
+              type="datetime-local"
+              name="startTime"
+              value={formData.startTime}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none transition focus:border-slate-500"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              End Time
+            </label>
+            <input
+              type="datetime-local"
+              name="endTime"
+              value={formData.endTime}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none transition focus:border-slate-500"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={createLoading}
+              className="rounded-lg bg-slate-900 px-5 py-2.5 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {createLoading ? "Creating..." : "Create Election"}
+            </button>
+          </div>
+        </form>
       </SectionCard>
 
-      <SectionCard className="space-y-4">
-        <div className="flex items-center justify-between">
+      <SectionCard>
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-800">
-            All Elections
+            Election List
           </h2>
+
           <button
             onClick={fetchElections}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
@@ -116,9 +212,10 @@ const AdminElectionsPage = () => {
         {loading ? (
           <Loader text="Elections load ho rahe hain..." />
         ) : elections.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
-            No elections available
-          </div>
+          <EmptyState
+            title="No Elections Available"
+            message="Abhi tak koi election create nahi hua hai."
+          />
         ) : (
           <div className="grid gap-4">
             {elections.map((election) => (
@@ -126,38 +223,43 @@ const AdminElectionsPage = () => {
                 key={election.id}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-slate-800">
                       {election.name}
                     </h3>
 
                     <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">Start:</span>{" "}
-                      {new Date(election.startTime).toLocaleString()}
+                      <span className="font-medium text-slate-700">ID:</span>{" "}
+                      {election.id}
                     </p>
 
                     <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">End:</span>{" "}
-                      {new Date(election.endTime).toLocaleString()}
+                      <span className="font-medium text-slate-700">
+                        Start Time:
+                      </span>{" "}
+                      {election.startTime
+                        ? new Date(election.startTime).toLocaleString()
+                        : "N/A"}
                     </p>
 
-                    <span
-                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
-                        election.status,
-                      )}`}
-                    >
-                      {election.status}
-                    </span>
+                    <p className="text-sm text-slate-600">
+                      <span className="font-medium text-slate-700">
+                        End Time:
+                      </span>{" "}
+                      {election.endTime
+                        ? new Date(election.endTime).toLocaleString()
+                        : "N/A"}
+                    </p>
                   </div>
 
-                  <div>
+                  <div className="flex flex-col items-start gap-3 md:items-end">
+                    <StatusBadge status={election.status} />
+
                     <button
-                      onClick={() =>
-                        handleDeleteElection(election.id, election.name)
-                      }
+                      onClick={() => handleDeleteElection(election.id)}
                       disabled={deleteLoadingId === election.id}
-                      className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {deleteLoadingId === election.id
                         ? "Deleting..."
@@ -174,4 +276,4 @@ const AdminElectionsPage = () => {
   );
 };
 
-export default AdminElectionsPage;
+export default AdminElectionPage;
