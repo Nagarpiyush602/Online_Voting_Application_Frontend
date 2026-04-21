@@ -84,6 +84,9 @@ const Navbar = () => {
               <NavLink to="/admin/candidates" className={linkClass}>
                 Manage Candidates
               </NavLink>
+              <NavLink to="/admin/elections" className={linkClass}>
+                Manage Elections
+              </NavLink>
               <NavLink to="/active-election" className={linkClass}>
                 Active Election
               </NavLink>

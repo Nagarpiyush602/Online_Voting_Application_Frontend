@@ -12,6 +12,7 @@ import MyProfilePage from "../pages/voter/MyProfilePage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import VoterDashboardPage from "../pages/voter/VoterDashboardPage";
 import AdminCandidatesPage from "../pages/admin/AdminCandidatesPage";
+import AdminElectionsPage from "../pages/admin/AdminElectionPage";
 
 export const router = createBrowserRouter([
   {
@@ -43,6 +44,16 @@ export const router = createBrowserRouter([
     element: (
       <AppLayout>
         <ActiveElectionPage />
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/admin/elections",
+    element: (
+      <AppLayout>
+        <ProtectedRoute allowedRoles={["ADMIN"]}>
+          <AdminElectionsPage />
+        </ProtectedRoute>
       </AppLayout>
     ),
   },

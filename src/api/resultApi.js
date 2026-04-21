@@ -1,8 +1,8 @@
 import axiosInstance from "./axiosInstance";
 
-export const getElectionResult = async (electionName) => {
+export const declareElectionResult = async (electionName) => {
   const response = await axiosInstance.get(
-    `/api/election-results/${encodeURIComponent(electionName)}`,
+    `/api/election-results/declare/${encodeURIComponent(electionName)}`,
   );
 
   return response.data;
