@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
     return (
       <Navigate
-        to={role === "ADMIN" ? "/admin/dashboard" : "/active-election"}
+        to={role === "ADMIN" ? "/admin/dashboard" : "/voter/dashboard"}
         replace
       />
     );

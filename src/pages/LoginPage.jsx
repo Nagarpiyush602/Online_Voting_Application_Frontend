@@ -31,7 +31,7 @@ const LoginPage = () => {
       if (role === "ADMIN") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/active-election");
+        navigate("/voter/dashboard");
       }
     } catch (error) {
       toast.error(error.message || "Login failed");

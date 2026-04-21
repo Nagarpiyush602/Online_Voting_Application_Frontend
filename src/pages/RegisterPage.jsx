@@ -31,7 +31,7 @@ const RegisterPage = () => {
       if (role === "ADMIN") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/active-election");
+        navigate("/voter/dashboard");
       }
     } catch (error) {
       toast.error(error.message || "Registration failed");

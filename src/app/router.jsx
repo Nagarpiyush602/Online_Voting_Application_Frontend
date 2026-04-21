@@ -10,6 +10,7 @@ import VotePage from "../pages/voting/VotePage";
 import ResultPage from "../pages/result/ResultPage";
 import MyProfilePage from "../pages/voter/MyProfilePage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import VoterDashboardPage from "../pages/voter/VoterDashboardPage";
 
 export const router = createBrowserRouter([
   {
@@ -78,6 +79,16 @@ export const router = createBrowserRouter([
       <AppLayout>
         <ProtectedRoute allowedRoles={["VOTER"]}>
           <MyProfilePage />
+        </ProtectedRoute>
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/voter/dashboard",
+    element: (
+      <AppLayout>
+        <ProtectedRoute allowedRoles={["VOTER"]}>
+          <VoterDashboardPage />
         </ProtectedRoute>
       </AppLayout>
     ),
