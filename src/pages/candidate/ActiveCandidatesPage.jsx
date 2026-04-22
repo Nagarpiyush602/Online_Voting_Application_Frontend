@@ -30,10 +30,10 @@ const ActiveCandidatesPage = () => {
   }, []);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Candidates"
-        subtitle="Active election ke candidates backend se fetch ho rahe hain."
+        subtitle="Active election ke candidates backend se fetch ho rahe hain with cleaner responsive card layout."
       />
 
       {loading ? (
@@ -46,27 +46,39 @@ const ActiveCandidatesPage = () => {
           />
         </SectionCard>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {candidates.map((candidate) => (
-            <SectionCard key={candidate.id} className="space-y-3">
-              <h2 className="text-xl font-semibold text-slate-800">
-                {candidate.name}
-              </h2>
+            <SectionCard key={candidate.id} className="h-full">
+              <div className="flex h-full flex-col justify-between gap-4">
+                <div>
+                  <div className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Candidate
+                  </div>
 
-              <div className="space-y-1 text-slate-600">
-                <p>
-                  <span className="font-medium text-slate-700">Party:</span>{" "}
-                  {candidate.party || "N/A"}
+                  <h2 className="mt-4 text-xl font-semibold text-slate-900">
+                    {candidate.name}
+                  </h2>
+
+                  <div className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
+                    <p>
+                      <span className="font-medium text-slate-700">Party:</span>{" "}
+                      {candidate.party || "N/A"}
+                    </p>
+
+                    {"voteCount" in candidate ? (
+                      <p>
+                        <span className="font-medium text-slate-700">
+                          Vote Count:
+                        </span>{" "}
+                        {candidate.voteCount}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Candidate details active election API se aa rahi hain.
                 </p>
-
-                {"voteCount" in candidate && (
-                  <p>
-                    <span className="font-medium text-slate-700">
-                      Vote Count:
-                    </span>{" "}
-                    {candidate.voteCount}
-                  </p>
-                )}
               </div>
             </SectionCard>
           ))}

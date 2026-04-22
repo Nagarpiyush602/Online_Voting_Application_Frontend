@@ -5,6 +5,7 @@ import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
 import StatusBadge from "../../components/ui/StatusBadge";
 import EmptyState from "../../components/ui/EmptyState";
+
 import { getActiveElection } from "../../api/electionApi";
 
 const ActiveElectionPage = () => {
@@ -87,7 +88,7 @@ const ActiveElectionPage = () => {
     <div className="space-y-6">
       <PageHeader
         title="Active Election"
-        subtitle="Backend API se real active election data."
+        subtitle="Backend API se real active election data with cleaner summary and responsive layout."
       />
 
       {!election ? (
@@ -99,39 +100,43 @@ const ActiveElectionPage = () => {
         </SectionCard>
       ) : (
         <SectionCard className="space-y-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-800">
+              <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
                 {election.name}
               </h2>
-              <p className="mt-1 text-slate-500">
-                Election summary with live status
+              <p className="mt-1 text-sm leading-6 text-slate-500 sm:text-base">
+                Election summary with current timeline and live status.
               </p>
             </div>
 
-            <StatusBadge status={election.status} />
+            <div className="self-start lg:self-auto">
+              <StatusBadge status={election.status} />
+            </div>
           </div>
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-medium text-blue-700">{countdownText}</p>
+            <p className="text-sm font-medium leading-6 text-blue-700 sm:text-base">
+              {countdownText}
+            </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl bg-slate-50 p-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Start Time</p>
-              <p className="mt-1 font-medium text-slate-800">
+              <p className="mt-1 break-words font-medium text-slate-800">
                 {new Date(election.startTime).toLocaleString()}
               </p>
             </div>
 
-            <div className="rounded-xl bg-slate-50 p-4">
+            <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">End Time</p>
-              <p className="mt-1 font-medium text-slate-800">
+              <p className="mt-1 break-words font-medium text-slate-800">
                 {new Date(election.endTime).toLocaleString()}
               </p>
             </div>
 
-            <div className="rounded-xl bg-slate-50 p-4">
+            <div className="rounded-2xl bg-slate-50 p-4 sm:col-span-2 xl:col-span-1">
               <p className="text-sm text-slate-500">Status</p>
               <div className="mt-2">
                 <StatusBadge status={election.status} />

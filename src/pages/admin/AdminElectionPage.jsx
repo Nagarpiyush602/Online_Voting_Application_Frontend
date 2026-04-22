@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
 import StatusBadge from "../../components/ui/StatusBadge";
 import EmptyState from "../../components/ui/EmptyState";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   createElection,
   deleteElection,
   getAllElections,
 } from "../../api/electionApi";
+import { getApiData, getApiMessage, handleApiError } from "../../utils/api";
+import { showSuccessToast, showWarningToast } from "../../utils/toast";
 
 const initialForm = {
   name: "",
@@ -23,16 +25,18 @@ const AdminElectionPage = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [elections, setElections] = useState([]);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    electionId: null,
+  });
 
   const fetchElections = async () => {
     try {
       setLoading(true);
       const response = await getAllElections();
-      setElections(response.data || []);
+      setElections(getApiData(response) || []);
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to fetch elections";
-      toast.error(message);
+      handleApiError(error, "Failed to fetch elections");
       setElections([]);
     } finally {
       setLoading(false);
@@ -53,17 +57,17 @@ const AdminElectionPage = () => {
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      toast.error("Election name is required");
+      showWarningToast("Election name is required");
       return false;
     }
 
     if (!formData.startTime) {
-      toast.error("Start time is required");
+      showWarningToast("Start time is required");
       return false;
     }
 
     if (!formData.endTime) {
-      toast.error("End time is required");
+      showWarningToast("End time is required");
       return false;
     }
 
@@ -71,7 +75,7 @@ const AdminElectionPage = () => {
     const end = new Date(formData.endTime);
 
     if (end <= start) {
-      toast.error("End time must be greater than start time");
+      showWarningToast("End time must be greater than start time");
       return false;
     }
 
@@ -93,35 +97,29 @@ const AdminElectionPage = () => {
       };
 
       const response = await createElection(payload);
-
-      toast.success(response.message || "Election created successfully");
+      showSuccessToast(
+        getApiMessage(response, "Election created successfully"),
+      );
       setFormData(initialForm);
       fetchElections();
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to create election";
-      toast.error(message);
+      handleApiError(error, "Failed to create election");
     } finally {
       setCreateLoading(false);
     }
   };
 
-  const handleDeleteElection = async (electionId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this election?",
-    );
-
-    if (!confirmed) return;
-
+  const handleDeleteElection = async () => {
     try {
-      setDeleteLoadingId(electionId);
-      const response = await deleteElection(electionId);
-      toast.success(response.message || "Election deleted successfully");
+      setDeleteLoadingId(confirmState.electionId);
+      const response = await deleteElection(confirmState.electionId);
+      showSuccessToast(
+        getApiMessage(response, "Election deleted successfully"),
+      );
+      setConfirmState({ open: false, electionId: null });
       fetchElections();
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to delete election";
-      toast.error(message);
+      handleApiError(error, "Failed to delete election");
     } finally {
       setDeleteLoadingId(null);
     }
@@ -134,11 +132,10 @@ const AdminElectionPage = () => {
         subtitle="Admin yahan new election create kar sakta hai aur existing elections manage kar sakta hai."
       />
 
-      <SectionCard>
-        <h2 className="mb-4 text-xl font-semibold text-slate-800">
-          Create Election
-        </h2>
-
+      <SectionCard
+        title="Create Election"
+        subtitle="New election create karne ke liye basic scheduling details bharo."
+      >
         <form
           onSubmit={handleCreateElection}
           className="grid gap-4 md:grid-cols-2"
@@ -189,89 +186,87 @@ const AdminElectionPage = () => {
               disabled={createLoading}
               className="rounded-lg bg-slate-900 px-5 py-2.5 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {createLoading ? "Creating..." : "Create Election"}
+              {createLoading ? (
+                <Loader inline size="sm" text="Creating..." />
+              ) : (
+                "Create Election"
+              )}
             </button>
           </div>
         </form>
       </SectionCard>
 
-      <SectionCard>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-800">
-            Election List
-          </h2>
-
+      <SectionCard
+        title="Election List"
+        subtitle="All elections with live status and delete action."
+        action={
           <button
             onClick={fetchElections}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
           >
             Refresh
           </button>
-        </div>
-
+        }
+      >
         {loading ? (
           <Loader text="Elections load ho rahe hain..." />
         ) : elections.length === 0 ? (
           <EmptyState
             title="No Elections Available"
-            message="Abhi tak koi election create nahi hua hai."
+            message="Abhi tak koi election create nahi hua."
           />
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             {elections.map((election) => (
               <div
                 key={election.id}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
                     <h3 className="text-lg font-semibold text-slate-800">
                       {election.name}
                     </h3>
-
-                    <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">ID:</span>{" "}
-                      {election.id}
+                    <p className="mt-2 text-sm text-slate-600">
+                      Start: {new Date(election.startTime).toLocaleString()}
                     </p>
-
-                    <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">
-                        Start Time:
-                      </span>{" "}
-                      {election.startTime
-                        ? new Date(election.startTime).toLocaleString()
-                        : "N/A"}
-                    </p>
-
-                    <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">
-                        End Time:
-                      </span>{" "}
-                      {election.endTime
-                        ? new Date(election.endTime).toLocaleString()
-                        : "N/A"}
+                    <p className="mt-1 text-sm text-slate-600">
+                      End: {new Date(election.endTime).toLocaleString()}
                     </p>
                   </div>
-
-                  <div className="flex flex-col items-start gap-3 md:items-end">
-                    <StatusBadge status={election.status} />
-
-                    <button
-                      onClick={() => handleDeleteElection(election.id)}
-                      disabled={deleteLoadingId === election.id}
-                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {deleteLoadingId === election.id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </button>
-                  </div>
+                  <StatusBadge status={election.status} />
                 </div>
+
+                <button
+                  onClick={() =>
+                    setConfirmState({ open: true, electionId: election.id })
+                  }
+                  disabled={deleteLoadingId === election.id}
+                  className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleteLoadingId === election.id ? (
+                    <Loader inline size="sm" text="Deleting..." />
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
               </div>
             ))}
           </div>
         )}
       </SectionCard>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Election"
+        message="Are you sure you want to delete this election? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        loading={Boolean(deleteLoadingId)}
+        onClose={() => setConfirmState({ open: false, electionId: null })}
+        onConfirm={handleDeleteElection}
+      />
     </div>
   );
 };

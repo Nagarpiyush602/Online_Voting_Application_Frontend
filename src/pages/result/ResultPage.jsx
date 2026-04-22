@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
+import EmptyState from "../../components/ui/EmptyState";
+import StatusBadge from "../../components/ui/StatusBadge";
+import InfoBanner from "../../components/ui/InfoBanner";
 import { getAllElections } from "../../api/electionApi";
 import { declareElectionResult } from "../../api/resultApi";
 import { getUserRole } from "../../utils/auth";
+import { getApiData, getApiMessage, handleApiError } from "../../utils/api";
+import { showSuccessToast, showWarningToast } from "../../utils/toast";
 
 const ResultPage = () => {
   const role = getUserRole();
@@ -21,7 +25,8 @@ const ResultPage = () => {
     try {
       setLoading(true);
       const response = await getAllElections();
-      const allElections = response.data || [];
+      const allElections = getApiData(response) || [];
+
       setElections(allElections);
 
       if (allElections.length > 0) {
@@ -32,9 +37,7 @@ const ResultPage = () => {
         setSelectedElectionName(completedElection.name);
       }
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to fetch elections";
-      toast.error(message);
+      handleApiError(error, "Failed to fetch elections");
       setElections([]);
     } finally {
       setLoading(false);
@@ -49,51 +52,65 @@ const ResultPage = () => {
     return elections.find((item) => item.name === selectedElectionName) || null;
   }, [elections, selectedElectionName]);
 
+  const hasResultData = Boolean(result?.resultStatus);
+  const isCompletedElection = selectedElection?.status === "COMPLETED";
+  const isAlreadyDeclared = Boolean(result?.declaredAt);
+
   const handleDeclareOrViewResult = async () => {
     if (!selectedElectionName) {
-      toast.error("Please select an election");
+      showWarningToast("Please select an election first");
       return;
     }
 
     try {
       setResultLoading(true);
       const response = await declareElectionResult(selectedElectionName);
-      setResult(response.data);
-      toast.success(response.message || "Result loaded successfully");
+      const resultData = getApiData(response);
+
+      setResult(resultData);
+      showSuccessToast(
+        getApiMessage(
+          response,
+          isAdmin
+            ? "Result declared successfully"
+            : "Result loaded successfully",
+        ),
+      );
     } catch (error) {
-      const message = error.response?.data?.message || "Failed to load result";
-      toast.error(message);
+      handleApiError(error, "Failed to load result");
       setResult(null);
     } finally {
       setResultLoading(false);
     }
   };
 
-  const isDeclareDisabled =
-    !selectedElection || selectedElection.status !== "COMPLETED";
+  const declareButtonDisabled =
+    resultLoading ||
+    !selectedElectionName ||
+    (isAdmin && (!isCompletedElection || isAlreadyDeclared));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Election Result"
-        subtitle="Election select karke result dekh sakte ho. Admin completed election ka result declare bhi kar sakta hai."
+        subtitle="Yahan se admin completed election ka result declare kar sakta hai aur voter declared result dekh sakta hai."
       />
 
       {loading ? (
-        <Loader text="Result page load ho rahi hai..." />
+        <Loader text="Result page load ho rahi hai..." fullPage />
       ) : (
         <>
-          <SectionCard className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-800">
-              Select Election
-            </h2>
-
+          <SectionCard
+            title="Select Election"
+            subtitle="Completed election choose karke result process start karo."
+          >
             {elections.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
-                No elections available
-              </div>
+              <EmptyState
+                title="No Elections Available"
+                message="Abhi system me koi election available nahi hai."
+              />
             ) : (
-              <>
+              <div className="space-y-4">
                 <select
                   value={selectedElectionName}
                   onChange={(e) => {
@@ -109,7 +126,7 @@ const ResultPage = () => {
                   ))}
                 </select>
 
-                {selectedElection && (
+                {selectedElection ? (
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="rounded-xl bg-slate-50 p-4">
                       <p className="text-sm text-slate-500">Start Time</p>
@@ -126,50 +143,65 @@ const ResultPage = () => {
                     </div>
 
                     <div className="rounded-xl bg-slate-50 p-4">
-                      <p className="text-sm text-slate-500">Status</p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {selectedElection.status}
-                      </p>
+                      <p className="text-sm text-slate-500">Election Status</p>
+                      <div className="mt-2">
+                        <StatusBadge status={selectedElection.status} />
+                      </div>
                     </div>
                   </div>
-                )}
+                ) : null}
+
+                {isAdmin && !isCompletedElection ? (
+                  <InfoBanner
+                    variant="warning"
+                    title="Result declaration blocked"
+                    message="Admin sirf COMPLETED election ka result declare kar sakta hai."
+                  />
+                ) : null}
+
+                {isAdmin && isAlreadyDeclared ? (
+                  <InfoBanner
+                    variant="info"
+                    title="Result already declared"
+                    message="Is election ka result already declared hai. Aap neeche declared result dekh sakte ho."
+                  />
+                ) : null}
 
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={handleDeclareOrViewResult}
-                    disabled={resultLoading || !selectedElectionName}
+                    disabled={declareButtonDisabled}
                     className="rounded-xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {resultLoading
-                      ? "Loading..."
-                      : isAdmin
-                        ? "Declare Result"
-                        : "View Result"}
+                    {resultLoading ? (
+                      <Loader
+                        inline
+                        size="sm"
+                        text={isAdmin ? "Declaring..." : "Loading..."}
+                      />
+                    ) : isAdmin ? (
+                      "Declare Result"
+                    ) : (
+                      "View Result"
+                    )}
                   </button>
-
-                  {isAdmin && isDeclareDisabled && (
-                    <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                      Declare button completed election ke liye hi use karna
-                      chahiye.
-                    </div>
-                  )}
                 </div>
-              </>
+              </div>
             )}
           </SectionCard>
 
-          <SectionCard className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-800">
-              Result Details
-            </h2>
-
-            {!result ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
-                Result not declared yet
-              </div>
+          <SectionCard
+            title="Result Details"
+            subtitle="Result state ke hisab se winner, tie, ya no-votes UI dikhaya jayega."
+          >
+            {!hasResultData ? (
+              <EmptyState
+                title="No Result Loaded"
+                message="Election choose karke result load ya declare karo."
+              />
             ) : (
-              <>
-                <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-5">
+                <div className="grid gap-4 md:grid-cols-4">
                   <div className="rounded-xl bg-slate-50 p-4">
                     <p className="text-sm text-slate-500">Election Name</p>
                     <p className="mt-1 font-semibold text-slate-800">
@@ -186,62 +218,70 @@ const ResultPage = () => {
 
                   <div className="rounded-xl bg-slate-50 p-4">
                     <p className="text-sm text-slate-500">Result Status</p>
+                    <div className="mt-2">
+                      <StatusBadge status={result.resultStatus} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Declared At</p>
                     <p className="mt-1 font-semibold text-slate-800">
-                      {result.resultStatus || "N/A"}
+                      {result.declaredAt
+                        ? new Date(result.declaredAt).toLocaleString()
+                        : "Not available"}
                     </p>
                   </div>
                 </div>
 
-                {result.resultStatus === "DECLARED" && (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-                    <p className="text-sm font-medium text-emerald-700">
+                {result.resultStatus === "DECLARED" ? (
+                  <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-6">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
                       Winner
                     </p>
-                    <h3 className="mt-2 text-2xl font-bold text-emerald-800">
+                    <h3 className="mt-2 text-3xl font-bold text-emerald-800">
                       {result.winnerName || "N/A"}
                     </h3>
-                    <p className="mt-2 text-emerald-700">
-                      Winner Vote Count: {result.winnerVotes ?? 0}
+                    <p className="mt-3 text-emerald-700">
+                      Winner vote count:{" "}
+                      <span className="font-semibold">
+                        {result.winnerVotes ?? 0}
+                      </span>
                     </p>
                   </div>
-                )}
+                ) : null}
 
-                {result.resultStatus === "TIE" && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-                    <h3 className="text-xl font-bold text-amber-800">
+                {result.resultStatus === "TIE" ? (
+                  <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                    <h3 className="text-2xl font-bold text-amber-800">
                       Result is a Tie
                     </h3>
                     <p className="mt-2 text-amber-700">
-                      Multiple candidates ke votes same hain.
+                      Multiple candidates ke highest votes same hain.
                     </p>
 
                     {Array.isArray(result.tiedCandidates) &&
-                      result.tiedCandidates.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {result.tiedCandidates.map((candidate, index) => (
-                            <span
-                              key={index}
-                              className="rounded-full bg-white px-3 py-1 text-sm font-medium text-amber-700"
-                            >
-                              {candidate}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    result.tiedCandidates.length > 0 ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {result.tiedCandidates.map((candidate, index) => (
+                          <span
+                            key={`${candidate}-${index}`}
+                            className="rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-medium text-amber-800"
+                          >
+                            {candidate}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                )}
+                ) : null}
 
-                {result.resultStatus === "NO_VOTES" && (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                    <h3 className="text-xl font-bold text-slate-800">
-                      No Votes Found
-                    </h3>
-                    <p className="mt-2 text-slate-600">
-                      Is election me abhi koi valid vote record nahi mila.
-                    </p>
-                  </div>
-                )}
-              </>
+                {result.resultStatus === "NO_VOTES" ? (
+                  <EmptyState
+                    title="No Votes Found"
+                    message="Is election me koi valid vote record nahi mila, isliye winner declare nahi hua."
+                  />
+                ) : null}
+              </div>
             )}
           </SectionCard>
         </>

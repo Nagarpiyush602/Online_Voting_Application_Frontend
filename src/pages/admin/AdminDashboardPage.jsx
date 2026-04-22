@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
 import StatCard from "../../components/ui/StatCard";
 import StatusBadge from "../../components/ui/StatusBadge";
 import EmptyState from "../../components/ui/EmptyState";
+import InfoBanner from "../../components/ui/InfoBanner";
 import { getAdminDashboard } from "../../api/adminApi";
+import { handleApiError } from "../../utils/api";
 
 const quickActions = [
   {
     title: "Manage Candidates",
-    description: "Add and delete candidates for the active election.",
+    description: "Active election ke candidates add aur delete karo.",
     path: "/admin/candidates",
   },
   {
     title: "Manage Elections",
-    description: "Create elections and manage election lifecycle.",
+    description: "Election create karo aur lifecycle manage karo.",
     path: "/admin/elections",
   },
   {
-    title: "Declare Result",
-    description: "Declare completed election results from result page.",
+    title: "Check Results",
+    description: "Completed election ka result review ya declare karo.",
     path: "/result",
   },
 ];
@@ -37,9 +38,7 @@ const AdminDashboardPage = () => {
       const response = await getAdminDashboard();
       setDashboard(response.data || null);
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to fetch admin dashboard";
-      toast.error(message);
+      handleApiError(error, "Failed to fetch admin dashboard");
       setDashboard(null);
     } finally {
       setLoading(false);
@@ -54,7 +53,7 @@ const AdminDashboardPage = () => {
     <div className="space-y-6">
       <PageHeader
         title="Admin Dashboard"
-        subtitle="Admin yahan system summary, active election details, aur quick actions dekh sakta hai."
+        subtitle="System summary, active election insight, aur quick admin actions ek jagah."
       />
 
       {loading ? (
@@ -63,40 +62,38 @@ const AdminDashboardPage = () => {
         <SectionCard>
           <EmptyState
             title="Dashboard Not Available"
-            message="Dashboard data available nahi hai."
+            message="Dashboard data abhi available nahi hai."
           />
         </SectionCard>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard title="Total Voters" value={dashboard.totalVoters} />
+            <StatCard
+              title="Total Voters"
+              value={dashboard.totalVoters}
+              extra="Registered voters in system"
+            />
             <StatCard
               title="Total Candidates"
               value={dashboard.totalCandidates}
+              extra="All candidates count"
             />
-            <StatCard title="Total Votes" value={dashboard.totalVotes} />
+            <StatCard
+              title="Total Votes"
+              value={dashboard.totalVotes}
+              extra="Votes cast so far"
+            />
             <StatCard
               title="Total Elections"
               value={dashboard.totalElections}
+              extra="All created elections"
             />
           </div>
 
-          <SectionCard className="space-y-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Active Election Summary
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Current live election information for admin
-                </p>
-              </div>
-
-              {dashboard.activeElectionStatus ? (
-                <StatusBadge status={dashboard.activeElectionStatus} />
-              ) : null}
-            </div>
-
+          <SectionCard
+            title="Active Election Summary"
+            subtitle="Current live election information"
+          >
             {!dashboard.activeElectionName ? (
               <EmptyState
                 title="No Active Election"
@@ -106,14 +103,14 @@ const AdminDashboardPage = () => {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Election ID</p>
-                  <p className="mt-1 font-semibold text-slate-800">
+                  <p className="mt-1 text-lg font-semibold text-slate-800">
                     {dashboard.activeElectionId ?? "N/A"}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Election Name</p>
-                  <p className="mt-1 font-semibold text-slate-800">
+                  <p className="mt-1 text-lg font-semibold text-slate-800">
                     {dashboard.activeElectionName}
                   </p>
                 </div>
@@ -128,16 +125,10 @@ const AdminDashboardPage = () => {
             )}
           </SectionCard>
 
-          <SectionCard className="space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Quick Actions
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Common admin tasks ke liye fast navigation
-              </p>
-            </div>
-
+          <SectionCard
+            title="Quick Actions"
+            subtitle="Daily admin operations ke liye fast navigation cards"
+          >
             <div className="grid gap-4 md:grid-cols-3">
               {quickActions.map((action) => (
                 <Link
@@ -158,6 +149,12 @@ const AdminDashboardPage = () => {
               ))}
             </div>
           </SectionCard>
+
+          <InfoBanner
+            variant="info"
+            title="Dashboard Design Improvement"
+            message="Stats, election summary, aur actions ko separate reusable sections me divide kiya gaya hai taaki UI clean aur interview-friendly lage."
+          />
         </>
       )}
     </div>

@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import SectionCard from "../../components/ui/SectionCard";
 import Loader from "../../components/ui/Loader";
 import CandidateForm from "../../components/candidate/CandidateForm";
+import EmptyState from "../../components/ui/EmptyState";
+import InfoBanner from "../../components/ui/InfoBanner";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   addCandidate,
   deleteCandidate,
   getActiveElectionCandidates,
 } from "../../api/candidateApi";
 import { getActiveElection } from "../../api/electionApi";
+import { getApiData, getApiMessage, handleApiError } from "../../utils/api";
+import { showSuccessToast, showWarningToast } from "../../utils/toast";
 
 const AdminCandidatesPage = () => {
   const [loading, setLoading] = useState(true);
@@ -17,6 +21,11 @@ const AdminCandidatesPage = () => {
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [candidates, setCandidates] = useState([]);
   const [activeElection, setActiveElection] = useState(null);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    candidateId: null,
+    candidateName: "",
+  });
 
   const fetchPageData = async () => {
     try {
@@ -27,12 +36,10 @@ const AdminCandidatesPage = () => {
         getActiveElectionCandidates(),
       ]);
 
-      setActiveElection(electionResponse.data || null);
-      setCandidates(candidatesResponse.data || []);
+      setActiveElection(getApiData(electionResponse));
+      setCandidates(getApiData(candidatesResponse) || []);
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to fetch candidate data";
-      toast.error(message);
+      handleApiError(error, "Failed to fetch candidate data");
       setActiveElection(null);
       setCandidates([]);
     } finally {
@@ -46,7 +53,7 @@ const AdminCandidatesPage = () => {
 
   const handleAddCandidate = async (formData) => {
     if (!activeElection?.id) {
-      toast.error("No active election found. Candidate cannot be added.");
+      showWarningToast("No active election found. Candidate cannot be added.");
       return false;
     }
 
@@ -60,38 +67,28 @@ const AdminCandidatesPage = () => {
       };
 
       const response = await addCandidate(payload);
-      toast.success(response.message || "Candidate added successfully");
-
+      showSuccessToast(getApiMessage(response, "Candidate added successfully"));
       await fetchPageData();
       return true;
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to add candidate";
-      toast.error(message);
+      handleApiError(error, "Failed to add candidate");
       return false;
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleDeleteCandidate = async (candidateId, candidateName) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${candidateName}?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  const handleDeleteCandidate = async () => {
     try {
-      setDeleteLoadingId(candidateId);
-      const response = await deleteCandidate(candidateId);
-      toast.success(response.message || "Candidate deleted successfully");
+      setDeleteLoadingId(confirmState.candidateId);
+      const response = await deleteCandidate(confirmState.candidateId);
+      showSuccessToast(
+        getApiMessage(response, "Candidate deleted successfully"),
+      );
+      setConfirmState({ open: false, candidateId: null, candidateName: "" });
       await fetchPageData();
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to delete candidate";
-      toast.error(message);
+      handleApiError(error, "Failed to delete candidate");
     } finally {
       setDeleteLoadingId(null);
     }
@@ -105,51 +102,57 @@ const AdminCandidatesPage = () => {
       />
 
       {loading ? (
-        <Loader text="Candidates management page load ho rahi hai..." />
+        <Loader
+          text="Candidates management page load ho rahi hai..."
+          fullPage
+        />
       ) : (
         <>
-          <SectionCard className="space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Active Election
-              </h2>
-              <p className="mt-2 text-slate-600">
-                {activeElection
-                  ? `${activeElection.name} (${activeElection.status})`
-                  : "No active election available"}
-              </p>
-            </div>
+          <SectionCard
+            title="Active Election"
+            subtitle="Candidate sirf active election ke against add kiya jayega."
+          >
+            <div className="space-y-4">
+              {activeElection ? (
+                <InfoBanner
+                  variant="info"
+                  title={activeElection.name}
+                  message={`Current status: ${activeElection.status}`}
+                />
+              ) : (
+                <InfoBanner
+                  variant="warning"
+                  title="No active election available"
+                  message="Pehle active election hona chahiye tabhi candidate add kar sakte ho."
+                />
+              )}
 
-            {activeElection ? (
-              <CandidateForm
-                onSubmit={handleAddCandidate}
-                loading={formLoading}
-              />
-            ) : (
-              <div className="rounded-xl bg-amber-50 p-4 text-amber-700">
-                Pehle active election hona chahiye tabhi candidate add kar sakte
-                ho.
-              </div>
-            )}
+              {activeElection ? (
+                <CandidateForm
+                  onSubmit={handleAddCandidate}
+                  loading={formLoading}
+                />
+              ) : null}
+            </div>
           </SectionCard>
 
-          <SectionCard className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-800">
-                Active Election Candidates
-              </h2>
+          <SectionCard
+            title="Active Election Candidates"
+            subtitle="Current active election ke saare candidates yahan dikh rahe hain."
+            action={
               <button
                 onClick={fetchPageData}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
               >
                 Refresh
               </button>
-            </div>
-
+            }
+          >
             {candidates.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
-                No candidates available
-              </div>
+              <EmptyState
+                title="No Candidates Available"
+                message="Active election ke liye abhi koi candidate available nahi hai."
+              />
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {candidates.map((candidate) => (
@@ -169,27 +172,33 @@ const AdminCandidatesPage = () => {
                         {candidate.party || "N/A"}
                       </p>
 
-                      {"voteCount" in candidate && (
+                      {"voteCount" in candidate ? (
                         <p className="text-slate-600">
                           <span className="font-medium text-slate-700">
                             Vote Count:
                           </span>{" "}
                           {candidate.voteCount}
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="mt-4">
                       <button
                         onClick={() =>
-                          handleDeleteCandidate(candidate.id, candidate.name)
+                          setConfirmState({
+                            open: true,
+                            candidateId: candidate.id,
+                            candidateName: candidate.name,
+                          })
                         }
                         disabled={deleteLoadingId === candidate.id}
-                        className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {deleteLoadingId === candidate.id
-                          ? "Deleting..."
-                          : "Delete"}
+                        {deleteLoadingId === candidate.id ? (
+                          <Loader inline size="sm" text="Deleting..." />
+                        ) : (
+                          "Delete"
+                        )}
                       </button>
                     </div>
                   </div>
@@ -197,6 +206,24 @@ const AdminCandidatesPage = () => {
               </div>
             )}
           </SectionCard>
+
+          <ConfirmDialog
+            open={confirmState.open}
+            title="Delete Candidate"
+            message={`Are you sure you want to delete ${confirmState.candidateName}?`}
+            confirmText="Delete"
+            cancelText="Cancel"
+            confirmVariant="danger"
+            loading={Boolean(deleteLoadingId)}
+            onClose={() =>
+              setConfirmState({
+                open: false,
+                candidateId: null,
+                candidateName: "",
+              })
+            }
+            onConfirm={handleDeleteCandidate}
+          />
         </>
       )}
     </div>

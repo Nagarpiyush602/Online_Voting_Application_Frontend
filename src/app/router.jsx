@@ -13,6 +13,8 @@ import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import VoterDashboardPage from "../pages/voter/VoterDashboardPage";
 import AdminCandidatesPage from "../pages/admin/AdminCandidatesPage";
 import AdminElectionsPage from "../pages/admin/AdminElectionPage";
+import AccessDeniedPage from "../pages/AccessDeniedPage";
+import NotFoundPage from "../pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +42,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/access-denied",
+    element: (
+      <AppLayout>
+        <AccessDeniedPage />
+      </AppLayout>
+    ),
+  },
+  {
     path: "/active-election",
     element: (
       <AppLayout>
@@ -48,11 +58,19 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/elections",
+    path: "/result",
     element: (
       <AppLayout>
-        <ProtectedRoute allowedRoles={["ADMIN"]}>
-          <AdminElectionsPage />
+        <ResultPage />
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/my-profile",
+    element: (
+      <AppLayout>
+        <ProtectedRoute allowedRoles={["ADMIN", "VOTER"]}>
+          <MyProfilePage />
         </ProtectedRoute>
       </AppLayout>
     ),
@@ -73,24 +91,6 @@ export const router = createBrowserRouter([
       <AppLayout>
         <ProtectedRoute allowedRoles={["VOTER"]}>
           <VotePage />
-        </ProtectedRoute>
-      </AppLayout>
-    ),
-  },
-  {
-    path: "/result",
-    element: (
-      <AppLayout>
-        <ResultPage />
-      </AppLayout>
-    ),
-  },
-  {
-    path: "/my-profile",
-    element: (
-      <AppLayout>
-        <ProtectedRoute allowedRoles={["VOTER"]}>
-          <MyProfilePage />
         </ProtectedRoute>
       </AppLayout>
     ),
@@ -122,6 +122,24 @@ export const router = createBrowserRouter([
         <ProtectedRoute allowedRoles={["ADMIN"]}>
           <AdminCandidatesPage />
         </ProtectedRoute>
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/admin/elections",
+    element: (
+      <AppLayout>
+        <ProtectedRoute allowedRoles={["ADMIN"]}>
+          <AdminElectionsPage />
+        </ProtectedRoute>
+      </AppLayout>
+    ),
+  },
+  {
+    path: "*",
+    element: (
+      <AppLayout>
+        <NotFoundPage />
       </AppLayout>
     ),
   },

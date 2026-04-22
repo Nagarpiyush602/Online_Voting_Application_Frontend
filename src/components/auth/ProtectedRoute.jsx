@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { getToken, getUserRole } from "../../utils/auth";
+import AccessDeniedPage from "../../pages/AccessDeniedPage";
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const token = getToken();
@@ -10,12 +11,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-    return (
-      <Navigate
-        to={role === "ADMIN" ? "/admin/dashboard" : "/voter/dashboard"}
-        replace
-      />
-    );
+    return <AccessDeniedPage />;
   }
 
   return children;

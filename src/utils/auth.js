@@ -28,6 +28,37 @@ export const clearAuthStorage = () => {
   removeUserRole();
 };
 
+export const isAuthenticated = () => Boolean(getToken());
+
+export const getCurrentUserEmail = () => {
+  const roleMap = getStoredRoleMap();
+  const currentRole = getUserRole();
+
+  const matchedEmail = Object.keys(roleMap).find(
+    (email) => roleMap[email] === currentRole,
+  );
+
+  return matchedEmail || "Not available";
+};
+
+export const getSessionInfo = () => {
+  const token = getToken();
+
+  if (!token) {
+    return {
+      hasToken: false,
+      tokenPreview: "No active session",
+      tokenLength: 0,
+    };
+  }
+
+  return {
+    hasToken: true,
+    tokenPreview: `${token.slice(0, 20)}...${token.slice(-10)}`,
+    tokenLength: token.length,
+  };
+};
+
 const getStoredRoleMap = () => {
   const roleMap = localStorage.getItem(USER_ROLE_MAP_KEY);
   return roleMap ? JSON.parse(roleMap) : {};
